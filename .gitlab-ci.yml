@@ -39,4 +39,4 @@ links:
     entrypoint: [""]
   allow_failure: true
   script:
-    - lychee --no-progress --exclude-mail "**/*.md"
+    - lychee --no-progress "**/*.md"
