@@ -17,20 +17,25 @@ verify:
 
 markdown-lint:
   stage: lint
-  image: davidanson/markdownlint-cli2:latest
+  image:
+    name: davidanson/markdownlint-cli2:latest
+    entrypoint: [""]
   script:
     - markdownlint-cli2 "**/*.md" "#node_modules"
 
 secrets:
   stage: security
-  image: zricethezav/gitleaks:latest
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
   script:
     - gitleaks detect --source . --verbose --redact
-  allow_failure: false
 
 links:
   stage: lint
-  image: lycheeverse/lychee:latest
+  image:
+    name: lycheeverse/lychee:latest
+    entrypoint: [""]
   script:
     - lychee --no-progress --exclude-mail "**/*.md"
   allow_failure: true
