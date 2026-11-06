@@ -24,7 +24,8 @@ ci-lint:
   stage: validate
   image: python:3.12-slim
   script:
-    - python3 - <<'PYEOF'
+    - |
+      python3 - <<'PYEOF'
       import json, urllib.request, urllib.parse, os
       content = open(".gitlab-ci.yml").read()
       data = urllib.parse.urlencode({"content": content}).encode()
