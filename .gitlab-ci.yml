@@ -1,10 +1,16 @@
 stages:
-  - verify
+  - validate
   - lint
   - security
+  - package
+  - release
 
+variables:
+  PACKAGE_NAME: "grok-automations"
+
+# ---------- validate ----------
 verify:
-  stage: verify
+  stage: validate
   image: python:3.12-slim
   script:
     - python3 scripts/verify-prompts.py
@@ -14,7 +20,25 @@ verify:
         echo "shopgoodwill found in a sourcing Sites default"; exit 1;
       fi
       echo "ok"
+ci-lint:
+  stage: validate
+  image: python:3.12-slim
+  script:
+    - |
+      import json, urllib.request, urllib.parse, os
+      content = open(".gitlab-ci.yml").read()
+      data = urllib.parse.urlencode({"content": content}).encode()
+      req = urllib.request.Request(
+          f"{os.environ['CI_API_V4_URL']}/projects/{os.environ['CI_PROJECT_ID']}/ci/lint",
+          data=data, method="POST")
+      req.add_header("JOB-TOKEN", os.environ["CI_JOB_TOKEN"])
+      with urllib.request.urlopen(req) as r:
+          res = json.loads(r.read())
+      print(json.dumps(res, indent=2))
+      if not res.get("valid"):
+          raise SystemExit("CI lint failed")
 
+# ---------- lint ----------
 markdown-lint:
   stage: lint
   image:
@@ -24,14 +48,6 @@ markdown-lint:
   script:
     - markdownlint-cli2 "**/*.md" "#node_modules"
 
-secrets:
-  stage: security
-  image:
-    name: zricethezav/gitleaks:latest
-    entrypoint: [""]
-  script:
-    - gitleaks detect --source . --verbose --redact
-
 links:
   stage: lint
   image:
@@ -40,3 +56,61 @@ links:
   allow_failure: true
   script:
     - lychee --no-progress "**/*.md"
+
+# ---------- security ----------
+secrets:
+  stage: security
+  image:
+    name: zricethezav/gitleaks:latest
+    entrypoint: [""]
+  script:
+    - gitleaks detect --source . --verbose --redact
+
+# ---------- package ----------
+package:
+  stage: package
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache zip
+  script:
+    - mkdir -p dist
+    - zip -r "dist/${PACKAGE_NAME}-${CI_COMMIT_SHORT_SHA}.zip"
+        01-sourcing-auctions 02-pricing-comps 03-listings-inventory
+        04-youtube-content 05-social-shortform 06-business-intel
+        07-weekly-synthesis AGENTS.md README.md NOTION-GROK-PLAYBOOK.md
+        scripts -x "*/node_modules/*"
+  artifacts:
+    name: "${PACKAGE_NAME}-${CI_COMMIT_SHORT_SHA}"
+    paths:
+      - dist/*.zip
+    expire_in: 90 days
+  rules:
+    - if: '$CI_COMMIT_TAG'
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# ---------- release ----------
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/cli:latest
+  needs:
+    - package
+  script:
+    - |
+      glab release create "${CI_COMMIT_TAG}" dist/*.zip \
+        --name "Release ${CI_COMMIT_TAG}" \
+        --notes "Automated release of the grok-automations prompt pack."
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  when: manual
+
+# ---------- scheduled nightly link check ----------
+nightly-links:
+  stage: lint
+  image:
+    name: lycheeverse/lychee:latest
+    entrypoint: [""]
+  script:
+    - lychee --no-progress "**/*.md"
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  allow_failure: true

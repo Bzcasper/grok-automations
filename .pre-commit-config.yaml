@@ -1,0 +1,20 @@
+repos:
+  - repo: local
+    hooks:
+      - id: verify-prompts
+        name: Verify prompt skeleton (9 parts)
+        entry: python3 scripts/verify-prompts.py
+        language: system
+        pass_filenames: false
+        files: '\.md$'
+      - id: check-readme
+        name: README index consistency
+        entry: python3 scripts/check-readme.py
+        language: system
+        pass_filenames: false
+        files: '\.md$'
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.17.2
+    hooks:
+      - id: markdownlint-cli2
+        args: ["--config", ".markdownlint.json"]
