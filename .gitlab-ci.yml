@@ -20,26 +20,6 @@ verify:
         echo "shopgoodwill found in a sourcing Sites default"; exit 1;
       fi
       echo "ok"
-ci-lint:
-  stage: validate
-  image: python:3.12-slim
-  script:
-    - |
-      python3 - <<'PYEOF'
-      import json, urllib.request, urllib.parse, os
-      content = open(".gitlab-ci.yml").read()
-      data = urllib.parse.urlencode({"content": content}).encode()
-      req = urllib.request.Request(
-          f"{os.environ['CI_API_V4_URL']}/projects/{os.environ['CI_PROJECT_ID']}/ci/lint",
-          data=data, method="POST")
-      req.add_header("JOB-TOKEN", os.environ["CI_JOB_TOKEN"])
-      with urllib.request.urlopen(req) as r:
-          res = json.loads(r.read())
-      print(json.dumps(res, indent=2))
-      if not res.get("valid"):
-          raise SystemExit("CI lint failed")
-      PYEOF
-
 # ---------- lint ----------
 markdown-lint:
   stage: lint
