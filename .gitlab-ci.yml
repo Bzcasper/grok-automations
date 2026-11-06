@@ -1,0 +1,36 @@
+stages:
+  - verify
+  - lint
+  - security
+
+verify:
+  stage: verify
+  image: python:3.12-slim
+  script:
+    - python3 scripts/verify-prompts.py
+    - python3 scripts/check-readme.py
+    - |
+      if grep -R "shopgoodwill.com" 01-sourcing-auctions/ | grep -qi "DEFAULTS - Sites"; then
+        echo "shopgoodwill found in a sourcing Sites default"; exit 1;
+      fi
+      echo "ok"
+
+markdown-lint:
+  stage: lint
+  image: davidanson/markdownlint-cli2:latest
+  script:
+    - markdownlint-cli2 "**/*.md" "#node_modules"
+
+secrets:
+  stage: security
+  image: zricethezav/gitleaks:latest
+  script:
+    - gitleaks detect --source . --verbose --redact
+  allow_failure: false
+
+links:
+  stage: lint
+  image: lycheeverse/lychee:latest
+  script:
+    - lychee --no-progress --exclude-mail "**/*.md"
+  allow_failure: true
