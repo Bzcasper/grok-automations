@@ -24,7 +24,7 @@ ci-lint:
   stage: validate
   image: python:3.12-slim
   script:
-    - |
+    - python3 - <<'PYEOF'
       import json, urllib.request, urllib.parse, os
       content = open(".gitlab-ci.yml").read()
       data = urllib.parse.urlencode({"content": content}).encode()
@@ -37,6 +37,7 @@ ci-lint:
       print(json.dumps(res, indent=2))
       if not res.get("valid"):
           raise SystemExit("CI lint failed")
+      PYEOF
 
 # ---------- lint ----------
 markdown-lint:
