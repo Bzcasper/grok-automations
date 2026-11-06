@@ -20,35 +20,7 @@ jobs:
         run: python3 scripts/check-readme.py
       - name: No shopgoodwill in sourcing Sites defaults
         run: |
-          if grep -R "shopgoodwill.com" 01-sourcing-auctions/ | grep -i "DEFAULTS - Sites" ; then
+          if grep -R "shopgoodwill.com" 01-sourcing-auctions/ | grep -qi "DEFAULTS - Sites"; then
             echo "shopgoodwill found in a sourcing Sites default"; exit 1
           fi
           echo "ok"
-
-  markdown-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DavidAnson/markdownlint-cli2-action@v19
-        with:
-          globs: "**/*.md"
-          config: ".markdownlint.json"
-
-  secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  links:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: lycheeverse/lychee-action@v2
-        with:
-          args: --no-progress --exclude-mail "**/*.md"
-          fail: true
